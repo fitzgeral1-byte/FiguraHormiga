@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agente Hormiga – Programa figuras</title>
+<style>
+:root{--bg:#e9eef5;--pn:#fff;--ink:#14213d;--mut:#5c6b84;--ln:#d5dde9;--av:#2f6fed;--gi:#1f9d55;--rep:#d9a300;--si:#e8590c;--ac:#fca311}
+*{box-sizing:border-box}body{margin:0;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--ink);color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{font-size:20px;margin:0;flex:1;min-width:200px}header h1 small{font-weight:400;opacity:.75;font-size:13px;margin-left:8px}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:7px 12px;background:var(--ac);color:var(--ink);font-weight:700}
+button:hover{filter:brightness(1.07)}button.g{background:#fff;color:var(--ink);border:1px solid var(--ln)}header button{background:#2b3c63;color:#fff}
+main{max-width:1280px;margin:0 auto;padding:12px;display:grid;grid-template-columns:210px minmax(300px,1fr) 320px;gap:12px}
+.pn{background:var(--pn);border-radius:12px;padding:12px;border:1px solid var(--ln)}.pn h2{font-size:14px;margin:0 0 8px;color:var(--mut)}
+.cmd{display:block;width:100%;margin-bottom:7px;text-align:left;color:#fff;cursor:grab}
+.c-av{background:var(--av)}.c-izq,.c-der{background:var(--gi)}.c-rep{background:var(--rep);color:#241c00}.c-si{background:var(--si)}
+.stagewrap{background:#fdfefe;border:1px solid var(--ln);border-radius:10px;text-align:center}
+#stage{width:100%;max-width:640px;display:block;margin:auto;touch-action:manipulation}
+#ant{transition:transform .3s linear}#ah{transition:transform .3s linear}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+#msg{margin-top:8px;padding:8px 10px;border-radius:8px;background:#fff8e1;display:none}#msg.bad{background:#ffe8e6}#msg.ok{background:#e3f7e9}
+#log{font:12px monospace;background:#f3f6fb;border-radius:8px;padding:6px;height:64px;overflow:auto;margin-top:8px;color:var(--mut)}
+#prog{min-height:220px;max-height:60vh;overflow:auto;border:2px dashed var(--ln);border-radius:10px;padding:6px}
+.blk{border-radius:8px;padding:6px 8px;margin:5px 0;color:#fff;font-weight:700;font-size:14px;border:3px solid transparent}
+.blk.av{background:var(--av)}.blk.izq,.blk.der{background:var(--gi)}.blk.rep{background:var(--rep);color:#241c00}.blk.si{background:var(--si)}
+.blk.sel{border-color:#14213d}.blk.run{outline:4px solid #22d3ee;box-shadow:0 0 12px #22d3ee}
+.blk input,.blk select{width:58px;font:inherit;border-radius:5px;border:0;padding:2px 4px}.blk select{width:auto}
+.blk .in{margin:4px 0 2px 12px;padding-left:6px;border-left:3px solid rgba(0,0,0,.25);min-height:10px}
+.bt{padding:1px 6px;font-size:12px;background:rgba(255,255,255,.3);color:inherit;margin-left:2px}
+.fcbox{overflow:auto;max-height:520px;background:#f8fafd;border-radius:8px}
+.fcn rect,.fcn polygon{fill:#fff;stroke:#14213d;stroke-width:2}.fcn text{font:13px sans-serif;fill:#14213d}.fcn.on rect,.fcn.on polygon{fill:#67e8f9;stroke:#0e7490}
+.wide{grid-column:1/-1}.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.stat{display:inline-block;background:#eef3fb;border-radius:8px;padding:4px 9px;margin:3px;font-size:13px}
+.msgs p{margin:5px 0}.tabs button{margin:2px}
+#modal{position:fixed;inset:0;background:rgba(10,20,40,.6);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}
+#modal>div{background:#fff;border-radius:14px;max-width:820px;width:100%;max-height:90vh;overflow:auto;padding:18px}
+.lv{display:inline-block;width:110px;margin:5px;padding:10px;border-radius:10px;border:2px solid var(--ln);text-align:center}
+.lv.lock{opacity:.45}.ach{padding:6px 0;border-bottom:1px solid var(--ln)}.ach.off{opacity:.4}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:10}
+pre{background:#f3f6fb;padding:8px;border-radius:8px;overflow:auto}
+@media(max-width:940px){main{grid-template-columns:1fr}.cmdrow{display:flex;flex-wrap:wrap;gap:6px}.cmd{width:auto;margin:0}}
+@media(prefers-reduced-motion:reduce){#ant,#ah{transition:none!important}}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #22d3ee}
+</style></head><body>
+<header><h1>🐜 AGENTE HORMIGA<small id="lvname"></small></h1>
+<button onclick="openLearn()">📚 Aprende</button><button onclick="openProg()">📊 Progreso y logros</button><button onclick="openTeacher()">👨‍🏫 Modo docente</button></header>
+<main>
+<section class="pn"><h2>🧩 COMANDOS</h2>
+<div class="cmdrow">
+<button class="cmd c-av" draggable="true" ondragstart="dg(event,'av')" onclick="addB('av')">➕ AVANZAR</button>
+<button class="cmd c-izq" draggable="true" ondragstart="dg(event,'izq')" onclick="addB('izq')">➕ IZQUIERDA</button>
+<button class="cmd c-der" draggable="true" ondragstart="dg(event,'der')" onclick="addB('der')">➕ DERECHA</button>
+<button class="cmd c-rep" draggable="true" ondragstart="dg(event,'rep')" onclick="addB('rep')">➕ REPETIR</button>
+<button class="cmd c-si" draggable="true" ondragstart="dg(event,'si')" onclick="addB('si')">➕ SI</button></div>
+<p style="font-size:12px;color:var(--mut)">Haz clic o arrastra un bloque al algoritmo. Toca un REPETIR o SI para que los nuevos bloques entren dentro.</p>
+<button class="g" style="width:100%" onclick="showHint()">💡 PISTA</button><div id="hints" style="font-size:13px;margin-top:8px"></div></section>
+<section class="pn"><div id="goal" style="font-size:14px;margin-bottom:8px"></div>
+<div class="stagewrap"><svg id="stage"></svg></div>
+<div class="bar"><button onclick="runAll()">▶ Ejecutar</button><button class="g" onclick="pauseA()">⏸ Pausar</button><button class="g" onclick="stepOnce()">⏭ Paso a paso</button><button class="g" onclick="resetLevel()">🔄 Reiniciar</button>
+<label style="font-size:13px">🐢<input id="spd" type="range" min="1" max="10" value="6">🐇</label></div>
+<div id="msg"></div><div id="log"></div></section>
+<section class="pn"><h2>MI ALGORITMO</h2><div id="tgt" style="font-size:12px;color:var(--mut);margin-bottom:4px"></div>
+<div id="prog" ondragover="event.preventDefault()" ondrop="dp(event)" onclick="selB(event,null)"></div>
+<div class="bar"><button class="g" onclick="G.prog=[];G.sel=null;renderEd()">🗑 Borrar todo</button><span id="cnt" style="font-size:13px"></span></div></section>
+<section class="pn wide"><h2>🧠 DIAGRAMA DE FLUJO (se construye con tu algoritmo y se ilumina al ejecutar)</h2><div class="fcbox" id="fc"></div></section>
+<section class="pn wide" id="resbox" style="display:none"></section>
+</main>
+<div id="modal" onclick="if(event.target===this)closeM()"><div id="mbody"></div></div><div id="toast"></div>
+<script>
+/* ============ DATOS DE NIVELES ============ */
+const CLAVE_DOCENTE="docente2025"; // cambia aquí la contraseña del modo docente
+const W=16,H=14;
+let _u=1;const uid=()=>_u++;
+const A=n=>({t:'av',n:String(n)}),I=(d=90)=>({t:'izq',n:String(d)}),D=(d=90)=>({t:'der',n:String(d)}),R=(n,b)=>({t:'rep',n:String(n),body:b}),S=(c,b)=>({t:'si',c,body:b});
+const niveles=[
+{name:"Línea",ico:"➖",concept:"Instrucción y secuencia",goal:"Dibuja una línea recta de 8 casillas hacia la derecha. Aquí no se usa REPETIR.",start:{x:3,y:7,h:0},sol:[A(8)],rec:1,req:{noRep:1},
+ obj:"Relacionar una instrucción con un movimiento.",errs:"Avanzar menos o más casillas; olvidar cambiar el número del bloque.",
+ hints:["Mira la línea punteada: cuenta cuántas casillas mide.","Un solo bloque AVANZAR alcanza.","Cambia el número del bloque AVANZAR a 8."]},
+{name:"Ángulo en L",ico:"📐",concept:"Girar cambia la dirección",goal:"Dibuja la L: baja 5 casillas, gira y avanza 6 hacia la derecha. Cuidado: la hormiga empieza mirando hacia abajo.",start:{x:4,y:2,h:90},sol:[A(5),I(),A(6)],rec:3,req:{noRep:1},
+ obj:"Comprender que un giro cambia hacia dónde avanza la hormiga.",errs:"Girar al lado equivocado (derecha en vez de izquierda).",
+ hints:["Primero avanza por el lado vertical.","Mirando hacia abajo, ¿a qué lado está el este? Prueba IZQUIERDA.","AVANZAR 5, IZQUIERDA, AVANZAR 6."]},
+{name:"Triángulo",ico:"🔺",concept:"Movimiento + giro, patrón",goal:"Dibuja un triángulo equilátero de lado 6. Cada bloque de giro tiene un ángulo que puedes cambiar (no siempre es 90°).",start:{x:5,y:10,h:0},sol:[A(6),I(120),A(6),I(120),A(6)],rec:5,req:{noRep:1},
+ obj:"Ver que una figura es movimiento-giro-movimiento-giro. Ángulo exterior = 120°.",errs:"Usar 60° (ángulo interior) en vez de 120° (ángulo de giro).",
+ hints:["Observa el patrón: avanzar, girar, avanzar, girar, avanzar.","El triángulo tiene 3 lados iguales; ¿cuánto debe girar la hormiga en cada esquina?","Un giro completo son 360°. Repartido en 3 esquinas: 120° cada una."]},
+{name:"Cuadrado",ico:"⬛",concept:"REPETIR",goal:"Construye un cuadrado de lado 5 con la menor cantidad posible de bloques.",start:{x:5,y:3,h:0},sol:[R(4,[A(5),D()])],rec:3,req:{},
+ obj:"Descubrir el bucle: mismo par de instrucciones repetido 4 veces.",errs:"Repetir 3 veces; poner el giro fuera del bucle.",
+ hints:["Observa cuántas veces se repite el mismo movimiento.","¿Puedes utilizar REPETIR?","REPETIR 4 VECES: AVANZAR 5 y DERECHA."]},
+{name:"Rectángulo",ico:"▭",concept:"Lados distintos + repetición",goal:"Dibuja un rectángulo de 8 de ancho por 4 de alto.",start:{x:3,y:3,h:0},sol:[R(2,[A(8),D(),A(4),D()])],rec:5,req:{},
+ obj:"No todas las figuras tienen lados iguales; el patrón que se repite es 'largo + ancho'.",errs:"Repetir 4 veces un solo lado.",
+ hints:["Los lados opuestos son iguales.","El patrón 'lado largo, giro, lado corto, giro' se repite.","REPETIR 2: AVANZAR 8, DERECHA, AVANZAR 4, DERECHA."]},
+{name:"Triángulos repetidos",ico:"🌀",concept:"Repetición de patrones (bucles anidados)",goal:"Dibuja 4 triángulos de lado 3 que comparten la esquina de salida, cada uno girado 90° respecto al anterior. Usa un REPETIR dentro de otro.",start:{x:8,y:7,h:0},sol:[R(4,[R(3,[A(3),D(120)]),D(90)])],rec:5,req:{rep:1,nested:1},
+ obj:"Un algoritmo puede contener otro patrón repetitivo.",errs:"Olvidar el giro de 90° entre triángulos.",
+ hints:["Primero resuelve un triángulo de lado 3.","Ese triángulo se repite 4 veces, girando entre uno y otro.","Toca el REPETIR de afuera y agrega dentro otro REPETIR."]},
+{name:"Estrella",ico:"⭐",concept:"Ángulo de giro y repetición",goal:"Dibuja la estrella de 5 puntas con segmentos de 6 casillas.",start:{x:5,y:4,h:0},sol:[R(5,[A(6),D(144)])],rec:3,req:{},
+ obj:"Descubrir el ángulo 144° (2 vueltas de 360° repartidas en 5 giros).",errs:"Usar 72° (pentágono) en vez de 144°.",
+ hints:["Observa cuántas puntas tiene la figura.","¿Puedes repetir el mismo patrón?","Una estrella necesita cambiar de dirección después de cada segmento. Prueba 144°."]},
+{name:"Espiral",ico:"🐚",concept:"Variable: el valor cambia en cada vuelta",goal:"Dibuja la espiral cuadrada. En AVANZAR puedes escribir la letra i: es el número de repetición (1, 2, 3…).",start:{x:7,y:6,h:0},sol:[R(10,[A('i'),D()])],rec:3,req:{rep:1},
+ obj:"Introducir la variable: el algoritmo cambia su comportamiento a medida que avanza.",errs:"Usar un número fijo en AVANZAR.",
+ hints:["Cada lado es un poco más largo que el anterior.","Los lados miden 1, 2, 3, 4…","REPETIR 10: AVANZAR i, DERECHA."]},
+{name:"Casa",ico:"🏠",concept:"Figuras compuestas",goal:"Construye una casa: un cuadrado de lado 5 y un techo triangular encima (lado 5). Puedes terminar en cualquier orden, ¡pero el dibujo debe coincidir!",start:{x:5,y:11,h:0},sol:[R(4,[A(5),I()]),I(),A(5),D(30),A(5),D(120),A(5)],rec:9,req:{rep:1},
+ obj:"Descomponer una figura compleja en figuras simples y reutilizar patrones.",errs:"Techo con ángulos de 90°.",
+ hints:["Divide la casa: cuadrado + triángulo.","El cuadrado ya lo sabes hacer con REPETIR.","El techo: gira 90° a la izquierda, sube 5, luego DERECHA 30°, avanza 5, DERECHA 120°, avanza 5."]},
+{name:"Reto final",ico:"🏆",concept:"Evaluación: secuencia, repetición y condición",goal:"Dibuja un cuadrado de lado 5 y, desde su esquina de salida, una estrella de lado 5. Debes usar REPETIR y SI (por ejemplo: SI hay camino, dibuja la estrella). Bloques recomendados: 7.",start:{x:4,y:3,h:0},sol:[R(4,[A(5),D()]),S('camino',[R(5,[A(5),D(144)])])],rec:7,req:{rep:1,si:1},
+ obj:"Combinar patrones, repeticiones y condiciones en un solo algoritmo.",errs:"No incluir el SI; estrella con ángulo incorrecto.",
+ hints:["Descompón: cuadrado + estrella, empezando en el mismo punto.","Cuadrado: REPETIR 4; estrella: REPETIR 5.","Envuelve la estrella dentro de un bloque SI hay camino."]}
+];
+/* ============ ESTADO ============ */
+const G={lvl:0,prog:[],sel:null,hint:0};let AN=null,AS={x:0,y:0,h:0},PR={done:{},flags:{},ach:{}};
+const $=id=>document.getElementById(id);
+/* ============ MOTOR DE EJECUCIÓN ============ */
+const RAD=Math.PI/180;
+function condOk(c,s){const nx=s.x+Math.cos(s.h*RAD),ny=s.y+Math.sin(s.h*RAD);const cam=nx>=0&&nx<=W&&ny>=0&&ny<=H;
+ if(c==='camino')return cam;if(c==='obstaculo')return !cam;return s.x<=0||s.y<=0||s.x>=W||s.y>=H;}
+function interpretar(prog,L){const s={...L.start},steps=[],segs=[],it=[];
+ (function run(list){for(const b of list){if(steps.length>2500)throw"Demasiadas instrucciones. Revisa tus REPETIR.";
+  if(b.t==='av'){const n=b.n==='i'?(it[it.length-1]||0):Math.max(0,Math.min(30,parseFloat(b.n)||0));
+   const x1=s.x+Math.cos(s.h*RAD)*n,y1=s.y+Math.sin(s.h*RAD)*n;steps.push({k:'mv',id:b.id,x0:s.x,y0:s.y,x1,y1,txt:'AVANZAR '+(b.n==='i'?'i='+it[it.length-1]:n)});segs.push([s.x,s.y,x1,y1]);s.x=x1;s.y=y1;}
+  else if(b.t==='izq'||b.t==='der'){const a=parseFloat(b.n)||0;s.h+=(b.t==='der'?a:-a);steps.push({k:'turn',id:b.id,h:s.h,txt:(b.t==='der'?'DERECHA ':'IZQUIERDA ')+a+'°'});}
+  else if(b.t==='rep'){const n=Math.max(0,Math.min(50,parseInt(b.n)||0));for(let i=1;i<=n;i++){it.push(i);steps.push({k:'blk',id:b.id,txt:'REPETIR: vuelta '+i+' de '+n});run(b.body);it.pop();}}
+  else if(b.t==='si'){const ok=condOk(b.c,s);steps.push({k:'blk',id:b.id,txt:'SI '+CN[b.c]+' → '+(ok?'sí':'no')});if(ok)run(b.body);}
+ }})(prog);return{steps,segs};}
+const CN={camino:'hay camino',borde:'estoy en el borde',obstaculo:'detecto obstáculo'};
+function muestrear(segs){const p=[];for(const[a,b,c,d]of segs){const l=Math.hypot(c-a,d-b),n=Math.max(1,Math.ceil(l/.1));for(let i=0;i<=n;i++)p.push([a+(c-a)*i/n,b+(d-b)*i/n]);}return p;}
+function distSeg(px,py,s){const[a,b,c,d]=s,dx=c-a,dy=d-b,l2=dx*dx+dy*dy;let t=l2?((px-a)*dx+(py-b)*dy)/l2:0;t=Math.max(0,Math.min(1,t));return Math.hypot(px-a-t*dx,py-b-t*dy);}
+function cobertura(pts,segs,tol){if(!pts.length)return 0;let ok=0;for(const[x,y]of pts){if(segs.some(s=>distSeg(x,y,s)<=tol))ok++;}return ok/pts.length;}
+function objetivo(L){return interpretar(cloneIds(L.sol),L).segs;}
+function validarFigura(segs,L){const T=objetivo(L);if(!segs.length)return{ok:false,cubre:0,extra:1};
+ const cubre=cobertura(muestrear(T),segs,.25),propio=cobertura(muestrear(segs),T,.25);return{ok:cubre>.98&&propio>.98,cubre,extra:1-propio};}
+/* ============ BLOQUES / EDITOR ============ */
+function cloneIds(l){return l.map(b=>{const c={...b,id:uid()};if(b.body)c.body=cloneIds(b.body);return c;});}
+function find(l,id){for(let i=0;i<l.length;i++){if(l[i].id===id)return{arr:l,i,b:l[i]};if(l[i].body){const r=find(l[i].body,id);if(r)return r;}}return null;}
+function contar(l,f){let n=0;for(const b of l){if(!f||f(b))n++;if(b.body)n+=contar(b.body,f);}return n;}
+function hay(l,t){return contar(l,b=>b.t===t)>0;}
+function anidado(l,d=0){return l.some(b=>b.t==='rep'&&(d>0||anidado(b.body,1)))||l.some(b=>b.body&&anidado(b.body,d));}
+function dg(e,t){e.dataTransfer.setData('text/plain',t);}function dp(e){e.preventDefault();const t=e.dataTransfer.getData('text/plain');if(t)addB(t);}
+function addB(t){if(AN&&AN.running)return;const b={t,id:uid()};if(t==='av')b.n='3';if(t==='izq'||t==='der')b.n='90';if(t==='rep'){b.n='4';b.body=[];}if(t==='si'){b.c='camino';b.body=[];}
+ const s=G.sel&&find(G.prog,G.sel);(s&&s.b.body?s.b.body:G.prog).push(b);if(b.body)G.sel=b.id;renderEd();}
+function selB(e,id){e.stopPropagation();G.sel=(G.sel===id)?null:id;renderEd();}
+function setP(id,k,v){const r=find(G.prog,id);if(r){r.b[k]=v;renderEd();}}
+function delB(e,id){e.stopPropagation();const r=find(G.prog,id);r.arr.splice(r.i,1);if(G.sel===id)G.sel=null;renderEd();}
+function mvB(e,id,d){e.stopPropagation();const r=find(G.prog,id),j=r.i+d;if(j<0||j>=r.arr.length)return;[r.arr[r.i],r.arr[j]]=[r.arr[j],r.arr[r.i]];renderEd();}
+function edHTML(l){return l.map(b=>{const cs=`<span style="float:right"><button class="bt" onclick="mvB(event,${b.id},-1)">↑</button><button class="bt" onclick="mvB(event,${b.id},1)">↓</button><button class="bt" onclick="delB(event,${b.id})">✕</button></span>`;
+ const st=`class="blk ${b.t}${G.sel===b.id?' sel':''}" id="b-${b.id}"`,ic='onclick="event.stopPropagation()"';
+ if(b.t==='av')return`<div ${st} ${ic}>${cs}AVANZAR <input value="${b.n}" ${ic} onchange="setP(${b.id},'n',this.value.trim())" title="número, o i (variable)"></div>`;
+ if(b.t==='izq'||b.t==='der')return`<div ${st} ${ic}>${cs}${b.t==='izq'?'IZQUIERDA':'DERECHA'} <input type="number" value="${b.n}" ${ic} onchange="setP(${b.id},'n',this.value)">°</div>`;
+ if(b.t==='rep')return`<div ${st} onclick="selB(event,${b.id})">${cs}REPETIR <input type="number" min="1" max="50" value="${b.n}" ${ic} onchange="setP(${b.id},'n',this.value)"> VECES<div class="in">${edHTML(b.body)}</div>FIN REPETIR</div>`;
+ return`<div ${st} onclick="selB(event,${b.id})">${cs}SI <select ${ic} onchange="setP(${b.id},'c',this.value)">${Object.keys(CN).map(k=>`<option value="${k}"${b.c===k?' selected':''}>${CN[k]}</option>`).join('')}</select><div class="in">${edHTML(b.body)}</div>FIN SI</div>`;}).join('');}
+function renderEd(){const p=$('prog');p.innerHTML=G.prog.length?edHTML(G.prog):'<p style="color:#8a97ad;text-align:center">Aquí va tu algoritmo.<br>Añade bloques desde COMANDOS.</p>';
+ const s=G.sel&&find(G.prog,G.sel);$('tgt').textContent='Insertando en: '+(s?(s.b.t==='rep'?'dentro de REPETIR':'dentro de SI'):'el programa principal');
+ $('cnt').textContent='Bloques: '+contar(G.prog);$('fc').innerHTML=fcSVG(G.prog,'m');}
+/* ============ DIAGRAMA DE FLUJO ============ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function fcSVG(prog,pre){let Y=10,maxX=260,out='',prev=null,pend=[];const nh=34,gap=22;
+ const mk=`<defs><marker id="${pre}a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#14213d"/></marker></defs>`;
+ const ln=(d,lab,lx,ly)=>{out+=`<path d="${d}" fill="none" stroke="#14213d" stroke-width="1.6" marker-end="url(#${pre}a)"/>`;if(lab)out+=`<text x="${lx}" y="${ly}" font-size="11" fill="#5c6b84">${lab}</text>`;};
+ function place(id,cx,txt,type){if(prev){const m=(prev.y+Y)/2;ln(`M${prev.x} ${prev.y} V${m} H${cx} V${Y}`);}
+  pend.forEach(p=>ln(`M${p.x} ${p.y} H${p.x+16} V${Y-10} H${cx} V${Y}`,p.l,p.x+3,p.y-4));pend=[];
+  const h=type==='dec'?50:nh;let sh;
+  if(type==='term')sh=`<rect x="${cx-70}" y="${Y}" width="140" height="${h}" rx="17"/>`;
+  else if(type==='dec')sh=`<polygon points="${cx},${Y} ${cx+95},${Y+25} ${cx},${Y+50} ${cx-95},${Y+25}"/>`;
+  else if(type==='loop')sh=`<rect x="${cx-85}" y="${Y}" width="170" height="${h}" rx="6" stroke-dasharray="5 3"/>`;
+  else sh=`<rect x="${cx-85}" y="${Y}" width="170" height="${h}"/>`;
+  out+=`<g class="fcn" id="fc${pre}-${id}">${sh}<text x="${cx}" y="${Y+h/2+4}" text-anchor="middle">${esc(txt)}</text></g>`;
+  const top=Y;Y+=h;prev={x:cx,y:Y};Y+=gap;maxX=Math.max(maxX,cx+130);return top;}
+ function gen(l,x0){const cx=x0+85;for(const b of l){
+  if(b.t==='av')place(b.id,cx,'AVANZAR '+b.n,'proc');
+  else if(b.t==='izq'||b.t==='der')place(b.id,cx,(b.t==='der'?'DERECHA ':'IZQUIERDA ')+b.n+'°','proc');
+  else if(b.t==='rep'){const top=place(b.id,cx,'REPETIR '+b.n+' VECES','loop');gen(b.body,x0+34);
+   if(prev&&b.body.length){const bx=x0+2;ln(`M${prev.x-40} ${prev.y} V${prev.y+12} H${bx-12} V${top+17} H${x0}`,'repite',bx-8,prev.y+24);}
+   Y+=b.body.length?10:0;pend.push({x:cx+85,y:top+17,l:'terminó'});prev=null;}
+  else{const top=place(b.id,cx,'¿'+CN[b.c]+'?','dec');Y=top+50+gap;prev={x:cx,y:top+50};out+=`<text x="${cx+4}" y="${top+64}" font-size="11" fill="#5c6b84">Sí</text>`;
+   gen(b.body,x0+34);pend.push({x:cx+95,y:top+25,l:'No'});}
+ }}
+ const t0=Y;place('ini',130,'INICIO','term');gen(prog,20);place('fin',130,'FIN','term');
+ return`<svg width="${maxX+30}" height="${Y+10}" viewBox="0 0 ${maxX+30} ${Y+10}">${mk}${out}</svg>`;}
+/* ============ ESCENARIO ============ */
+function figSVG(segs,tsegs,cls){let g='';for(let i=0;i<=W;i++)g+=`<line x1="${i}" y1="0" x2="${i}" y2="${H}" stroke="#dbe4f0" stroke-width=".05"/>`;for(let j=0;j<=H;j++)g+=`<line x1="0" y1="${j}" x2="${W}" y2="${j}" stroke="#dbe4f0" stroke-width=".05"/>`;
+ const t=(tsegs||[]).map(s=>`<line x1="${s[0]}" y1="${s[1]}" x2="${s[2]}" y2="${s[3]}" stroke="#0284c7" stroke-opacity=".55" stroke-width=".14" stroke-dasharray=".3 .25"/>`).join('');
+ const u=segs.map(s=>`<line x1="${s[0]}" y1="${s[1]}" x2="${s[2]}" y2="${s[3]}" stroke="#e11d74" stroke-width=".2" stroke-linecap="round"/>`).join('');
+ return`<svg viewBox="-.5 -.5 ${W+1} ${H+1}" class="${cls||''}" style="width:100%;max-width:330px;background:#fdfefe;border-radius:8px">${g}${t}${u}</svg>`;}
+function buildStage(){const L=niveles[G.lvl],T=objetivo(L);let g='';
+ for(let i=0;i<=W;i++)g+=`<line x1="${i}" y1="0" x2="${i}" y2="${H}" stroke="#cfd9e8" stroke-width=".05"/>`;for(let j=0;j<=H;j++)g+=`<line x1="0" y1="${j}" x2="${W}" y2="${j}" stroke="#cfd9e8" stroke-width=".05"/>`;
+ const t=T.map(s=>`<line x1="${s[0]}" y1="${s[1]}" x2="${s[2]}" y2="${s[3]}" stroke="#0284c7" stroke-opacity=".6" stroke-width=".16" stroke-dasharray=".3 .25"/>`).join('');
+ $('stage').setAttribute('viewBox',`-.5 -.5 ${W+1} ${H+1}`);
+ $('stage').innerHTML=`<rect x="-.5" y="-.5" width="${W+1}" height="${H+1}" fill="#fdfefe"/>${g}<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="#14213d" stroke-width=".08"/>${t}<g id="drawn"></g><g id="ant"><circle r=".55" fill="#fff" fill-opacity=".8"/><text font-size="1" text-anchor="middle" dominant-baseline="central">🐜</text><g id="ah"><polygon points="1.05,0 .65,-.28 .65,.28" fill="#fca311" stroke="#14213d" stroke-width=".05"/></g></g>`;
+ AS={...L.start};setAnt(0);}
+function setAnt(ms){const a=$('ant'),h=$('ah');a.style.transition=h.style.transition=ms?`transform ${ms}ms linear`:'none';a.style.transform=`translate(${AS.x}px,${AS.y}px)`;h.style.transform=`rotate(${AS.h}deg)`;}
+/* ============ EJECUCIÓN ANIMADA ============ */
+const delay=()=>1150-$('spd').value*100;
+function msg(t,c){const m=$('msg');m.style.display=t?'block':'none';m.className=c||'';m.innerHTML=t||'';}
+function limpiarHL(){document.querySelectorAll('.run,.fcn.on').forEach(e=>e.classList.remove('run','on'));}
+function hl(id){limpiarHL();const b=$('b-'+id),f=$('fcm-'+id);if(b)b.classList.add('run');if(f){f.classList.add('on');const bx=$('fc');const y=f.getBBox().y;if(y>bx.scrollTop+bx.clientHeight-60||y<bx.scrollTop)bx.scrollTop=y-60;}}
+function preparar(){if(!G.prog.length){msg('Agrega bloques a tu algoritmo antes de ejecutar.','bad');return false;}
+ let r;try{r=interpretar(G.prog,niveles[G.lvl]);}catch(e){msg('⚠️ '+e,'bad');return false;}
+ buildStage();$('log').innerHTML='';$('resbox').style.display='none';msg('');AN={steps:r.steps,segs:r.segs,i:0,t0:performance.now(),running:false,timer:null};return true;}
+function doStep(){const s=AN.steps[AN.i++];hl(s.id);const ms=Math.min(delay()*.9,450);
+ if(s.k==='mv'){$('drawn').insertAdjacentHTML('beforeend',`<line x1="${s.x0}" y1="${s.y0}" x2="${s.x1}" y2="${s.y1}" stroke="#e11d74" stroke-width=".22" stroke-linecap="round"/>`);AS.x=s.x1;AS.y=s.y1;setAnt(ms);}
+ else if(s.k==='turn'){AS.h=s.h;setAnt(ms);}
+ const lg=$('log');lg.insertAdjacentHTML('beforeend',`<div>${AN.i}. ${esc(s.txt)}</div>`);lg.scrollTop=lg.scrollHeight;}
+function loop(){if(!AN||!AN.running)return;if(AN.i>=AN.steps.length){AN.running=false;terminar();return;}doStep();AN.timer=setTimeout(loop,delay());}
+function runAll(){if(AN&&AN.running)return;if(!AN||AN.i>=AN.steps.length){if(!preparar())return;}AN.running=true;loop();}
+function pauseA(){if(AN){AN.running=false;clearTimeout(AN.timer);}}
+function stepOnce(){pauseA();if(!AN||AN.i>=AN.steps.length){if(!preparar())return;}doStep();if(AN.i>=AN.steps.length)terminar();}
+function resetLevel(){pauseA();AN=null;limpiarHL();buildStage();$('log').innerHTML='';msg('');$('resbox').style.display='none';}
+/* ============ VALIDACIÓN Y RESULTADOS ============ */
+function terminar(){limpiarHL();const L=niveles[G.lvl],rq=L.req||{},tm=(performance.now()-AN.t0)/1000,v=validarFigura(AN.segs,L);
+ const usaRep=hay(G.prog,'rep'),usaSi=hay(G.prog,'si');
+ if(rq.noRep&&usaRep)return msg('🚫 En este nivel no se permite REPETIR. Construye la figura solo con secuencia.','bad');
+ if(!v.ok){let t='🔍 Todavía no coincide con la figura objetivo. Cubriste el '+Math.round(v.cubre*100)+'% del modelo';if(v.extra>.02)t+=' y dibujaste líneas que no pertenecen a la figura';return msg(t+'. Revisa las longitudes y los ángulos de giro, o pide una 💡 pista.','bad');}
+ if(rq.rep&&!usaRep)return msg('🔁 La figura es correcta, pero este nivel pide usar REPETIR. ¡Busca el patrón que se repite!','bad');
+ if(rq.si&&!usaSi)return msg('🔀 La figura es correcta, pero este nivel pide usar una condición SI.','bad');
+ if(rq.nested&&!anidado(G.prog))return msg('🧩 La figura es correcta, pero este nivel pide un REPETIR dentro de otro REPETIR.','bad');
+ const bl=contar(G.prog),mv=AN.steps.filter(s=>s.k==='mv').length,gi=AN.steps.filter(s=>s.k==='turn').length,nr=contar(G.prog,b=>b.t==='rep'),ns=contar(G.prog,b=>b.t==='si');
+ const efi=bl<=L.rec?'Alta 🚀':bl<=L.rec*1.6?'Media 👍':'Mejorable 🔧',estr=bl<=L.rec?3:(usaRep||rq.noRep||bl<=L.rec*1.6)?2:1;
+ PR.done[G.lvl]=Math.max(PR.done[G.lvl]||0,estr);if(usaRep)PR.flags.rep=1;if(usaSi)PR.flags.si=1;if(bl<=L.rec&&G.lvl>=3)PR.flags.eff=1;guardarProgreso();checkAch();
+ const solRep=hay(L.sol,'rep');let m=['<p>✅ Tu algoritmo funciona correctamente.</p>'];
+ if(usaRep&&solRep)m.push('<p>🧠 Encontraste un patrón repetitivo. ¡Excelente! Una forma más compacta de representar el patrón.</p>');
+ else if(solRep&&bl>L.rec)m.push('<p>💡 Puedes reducir la cantidad de bloques utilizando REPETIR.</p>');
+ if(usaSi)m.push('<p>🔀 Usaste una condición: tu programa toma decisiones.</p>');
+ if(bl<=L.rec)m.push('<p>💻 Lo resolviste con muy pocos bloques (recomendado: '+L.rec+').</p>');
+ msg('🎉 ¡Figura construida!','ok');
+ const box=$('resbox');box.style.display='block';
+ box.innerHTML=`<h2>📊 RESULTADO · ¿Cómo funciona tu algoritmo? ${'⭐'.repeat(estr)}</h2><div class="res">
+ <div><b>Tu figura</b>${figSVG(AN.segs)}</div><div><b>Figura objetivo</b>${figSVG(objetivo(L))}</div>
+ <div><b>Tu algoritmo</b><pre>${esc(aTexto(G.prog,0))}</pre></div></div>
+ <div class="msgs">${m.join('')}</div><div><span class="stat">Bloques: ${bl}</span><span class="stat">Movimientos: ${mv}</span><span class="stat">Giros: ${gi}</span><span class="stat">Repeticiones: ${nr}</span><span class="stat">Condicionales: ${ns}</span><span class="stat">Tiempo: ${tm.toFixed(1)} s</span><span class="stat">Eficiencia: ${efi}</span></div>
+ <p><b>Código → Algoritmo → Movimiento → Diagrama:</b> el diagrama de arriba muestra la misma lógica que tu código. Pulsa ▶ para verlo iluminarse otra vez.</p>
+ ${G.lvl<9?'<button onclick="irNivel('+(G.lvl+1)+')">Siguiente nivel ▶</button>':'<p>🎓 ¡Completaste todos los niveles!</p>'}`;
+ box.scrollIntoView({behavior:'smooth'});}
+function aTexto(l,d){return l.map(b=>{const p='  '.repeat(d);if(b.t==='av')return p+'AVANZAR '+b.n;if(b.t==='izq')return p+'IZQUIERDA '+b.n+'°';if(b.t==='der')return p+'DERECHA '+b.n+'°';
+ if(b.t==='rep')return p+'REPETIR '+b.n+' VECES\n'+aTexto(b.body,d+1)+'\n'+p+'FIN REPETIR';return p+'SI '+CN[b.c]+'\n'+aTexto(b.body,d+1)+'\n'+p+'FIN SI';}).join('\n');}
+/* ============ PISTAS ============ */
+function showHint(){const h=niveles[G.lvl].hints;if(G.hint<h.length)G.hint++;renderHints();}
+function renderHints(){const h=niveles[G.lvl].hints;$('hints').innerHTML=h.slice(0,G.hint).map((t,i)=>`<p>💡 <b>Pista ${i+1}:</b> ${t}</p>`).join('')+(G.hint>=h.length?'<p style="color:#5c6b84">No hay más pistas. ¡Tú puedes!</p>':'');}
+/* ============ PROGRESO Y LOGROS ============ */
+const logros=[
+{ic:'🏆',n:'Primer algoritmo',d:'Completaste tu primera figura.',ok:()=>Object.keys(PR.done).length>=1},
+{ic:'🔁',n:'Maestro de REPETIR',d:'Utilizaste correctamente un bucle.',ok:()=>PR.flags.rep},
+{ic:'🔀',n:'Pensador condicional',d:'Utilizaste una estructura SI.',ok:()=>PR.flags.si},
+{ic:'📐',n:'Geómetra digital',d:'Construiste 5 figuras.',ok:()=>Object.keys(PR.done).length>=5},
+{ic:'💻',n:'Programador eficiente',d:'Resolviste un desafío con pocos bloques.',ok:()=>PR.flags.eff},
+{ic:'🧠',n:'Pensamiento computacional',d:'Completaste todos los niveles.',ok:()=>Object.keys(PR.done).length>=10}];
+function checkAch(){logros.forEach((a,i)=>{if(!PR.ach[i]&&a.ok()){PR.ach[i]=1;guardarProgreso();toast('🏅 Logro: '+a.ic+' '+a.n);}});}
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',3200);}
+function guardarProgreso(){try{localStorage.setItem('agenteHormigaV1',JSON.stringify(PR));}catch(e){}}
+function cargarProgreso(){try{const s=localStorage.getItem('agenteHormigaV1');if(s)PR=Object.assign({done:{},flags:{},ach:{}},JSON.parse(s));}catch(e){}}
+const abierto=i=>i===0||PR.done[i-1];
+function openM(h){$('mbody').innerHTML='<button class="g" style="float:right" onclick="closeM()">✕ Cerrar</button>'+h;$('modal').style.display='flex';}function closeM(){$('modal').style.display='none';}
+function openProg(){openM('<h2>📊 Progreso</h2>'+niveles.map((L,i)=>`<button class="lv ${abierto(i)?'g':'g lock'}" ${abierto(i)?`onclick="closeM();irNivel(${i})"`:'disabled'}>Nivel ${i+1}<br>${L.ico} ${L.name}<br>${abierto(i)?(PR.done[i]?'⭐'.repeat(PR.done[i]):'▶ Jugar'):'🔒'}</button>`).join('')+'<h2>🏅 Logros</h2>'+logros.map((a,i)=>`<div class="ach ${PR.ach[i]?'':'off'}">${a.ic} <b>${a.n}</b> – ${a.d}</div>`).join('')+'<p><button class="g" onclick="if(confirm(\'¿Borrar todo el progreso?\')){PR={done:{},flags:{},ach:{}};guardarProgreso();irNivel(0);openProg()}">Borrar progreso</button></p>');}
+/* ============ APRENDE ============ */
+const SIM={ovalo:'Óvalo: marca el INICIO o el FIN del algoritmo.',rect:'Rectángulo: una acción o proceso (AVANZAR 4, DERECHA…).',rombo:'Rombo: una decisión con respuesta Sí / No (¿hay camino?).',flecha:'Flechas: muestran en qué orden se siguen los pasos.',bucle:'Repetición: un rectángulo punteado con una flecha que vuelve atrás; el bloque se repite varias veces.'};
+const lecc=[
+['¿Qué es un algoritmo?','<p>Un algoritmo es una serie de pasos ordenados que permiten resolver un problema o realizar una tarea.</p><p>Ejemplos cotidianos: preparar un sándwich, lavarse los dientes, llegar a la escuela, dibujar un cuadrado. Si cambias el orden de los pasos, ¡el resultado cambia!</p>'],
+['Secuencia','<p>Primero ocurre una acción, después otra y luego otra.</p><pre>AVANZAR 5\nDERECHA 90°\nAVANZAR 5</pre><p>La hormiga hace exactamente eso, en ese orden.</p>'],
+['Condicional','<p>Una condición permite que el programa tome una decisión.</p><p>Ejemplo: SI está lloviendo → llevar paraguas.</p><pre>SI hay camino\n  AVANZAR 1\nFIN SI</pre>'],
+['Repetición','<p>Cuando una acción o conjunto de acciones se repite, podemos utilizar un bucle.</p><pre>REPETIR 4 VECES\n  AVANZAR 4\n  DERECHA 90°\nFIN REPETIR</pre><p>Esto dibuja un cuadrado con solo 3 bloques.</p>'],
+['Diagrama de flujo','<p>Un diagrama de flujo dibuja un algoritmo. Pulsa cada símbolo:</p>'+Object.keys(SIM).map(k=>`<button class="g" onclick="$('sx').textContent=SIM['${k}']">${{ovalo:'⬭ Inicio/Fin',rect:'▭ Proceso',rombo:'◇ Decisión',flecha:'➜ Flechas',bucle:'⟲ Repetición'}[k]}</button>`).join(' ')+'<p id="sx" style="background:#eef3fb;padding:8px;border-radius:8px">Toca un símbolo.</p>']];
+function openLearn(i=0){openM('<h2>📚 APRENDE</h2><div class="tabs">'+lecc.map((l,j)=>`<button class="${j===i?'':'g'}" onclick="openLearn(${j})">${l[0]}</button>`).join('')+'</div><h3>'+lecc[i][0]+'</h3>'+lecc[i][1]);}
+/* ============ MODO DOCENTE ============ */
+function openTeacher(){const p=prompt('Contraseña del modo docente:');if(p===null)return;if(p!==CLAVE_DOCENTE)return alert('Contraseña incorrecta.');
+ const L=niveles[G.lvl],sol=cloneIds(L.sol);openM(`<h2>👨‍🏫 Nivel ${G.lvl+1}: ${L.name}</h2><p><b>Concepto:</b> ${L.concept}</p><p><b>Objetivo pedagógico:</b> ${L.obj}</p><p><b>Bloques mínimos aprox.:</b> ${L.rec}</p><p><b>Errores frecuentes:</b> ${L.errs}</p><p><b>Algoritmo de referencia:</b></p><pre>${esc(aTexto(sol,0))}</pre><p><b>Diagrama de referencia:</b></p><div class="fcbox">${fcSVG(sol,'t')}</div><p><button class="g" onclick="cargarSol()">Cargar la solución en el editor</button></p>`);}
+function cargarSol(){G.prog=cloneIds(niveles[G.lvl].sol);G.sel=null;renderEd();closeM();}
+/* ============ NIVELES / ARRANQUE ============ */
+function irNivel(i){if(!abierto(i))return;pauseA();AN=null;G.lvl=i;G.prog=[];G.sel=null;G.hint=0;const L=niveles[i];
+ $('lvname').textContent='Nivel '+(i+1)+'/10 · '+L.ico+' '+L.name;$('goal').innerHTML=`<b>🎯 ${L.name}</b> <span style="color:#5c6b84">(${L.concept})</span><br>${L.goal}<br><small>Bloques recomendados: ${L.rec}. La figura punteada es el modelo.</small>`;
+ buildStage();renderEd();renderHints();$('log').innerHTML='';msg('');$('resbox').style.display='none';}
+cargarProgreso();let ini=0;while(ini<9&&PR.done[ini])ini++;irNivel(ini);
+</script></body></html>
